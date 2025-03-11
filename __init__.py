@@ -1,48 +1,44 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Formulaire de connexion</title>
-</head>
-<body>
-    <h2>Connexion</h2>
-    <form action="/login" method="POST" id="login-form">
-        <label for="username">Nom d'utilisateur :</label>
-        <input type="text" id="username" name="username" required><br><br>
-        
-        <label for="password">Mot de passe :</label>
-        <input type="password" id="password" name="password" required><br><br>
-        
-        <button type="submit">Se connecter</button>
-    </form>
+from flask import Flask, render_template, jsonify, request, make_response
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import JWTManager
+from datetime import timedelta
 
-    <script>
-        // Lors de la soumission du formulaire, nous évitons le comportement par défaut (rechargement de la page) et envoyons les données en AJAX.
-        document.getElementById("login-form").addEventListener("submit", function(event) {
-            event.preventDefault();
+app = Flask(__name__)
 
-            var formData = new FormData(this);
+# Configuration du module JWT
+app.config["JWT_SECRET_KEY"] = "Ma_clé_secrete"  # Ma clée privée
+jwt = JWTManager(app)
 
-            fetch("/login", {
-                method: "POST",
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.access_token) {
-                    // Si un jeton est renvoyé, on le stocke dans un cookie
-                    document.cookie = `access_token=${data.access_token}; path=/;`;
-                    alert("Connexion réussie !");
-                    window.location.href = "/protected";  // Rediriger vers la route protégée
-                } else {
-                    alert("Erreur de connexion.");
-                }
-            })
-            .catch(error => {
-                alert("Erreur : " + error);
-            });
-        });
-    </script>
-</body>
-</html>
+@app.route('/')
+def hello_world():
+    return render_template('formulaire.html')
+
+@app.route("/login", methods=["POST"])
+def login():
+    username = request.form.get("username", None)
+    password = request.form.get("password", None)
+    
+    # Vérification des identifiants
+    if username == "admin" and password == "admin":
+        roles = ["admin"]
+    elif username == "user" and password == "userpass":
+        roles = ["user"]
+    else:
+        return jsonify({"msg": "Mauvais utilisateur ou mot de passe"}), 401
+
+    # Créer le jeton avec les rôles appropriés
+    access_token = create_access_token(identity=username, additional_claims={"roles": roles}, expires_delta=timedelta(hours=1))
+    
+    # Stocker le jeton dans un cookie
+    response = make_response(jsonify(access_token=access_token))
+    response.set_cookie("access_token", access_token, max_age=timedelta(hours=1), httponly=True, secure=False)  # `secure=True` si vous utilisez HTTPS
+    return response
+
+@app.route("/protected", methods=["GET"])
+@jwt_required()
+def protected():
+    current_user = get_jwt_identity()
+    return jsonify(logged_in_as=current_user), 200
+
+if __name__ == "__main__":
+    app.run(debug=True)
