@@ -27,14 +27,15 @@ def login():
     username = request.json.get("username", None)
     password = request.json.get("password", None)
     
-    # Vérification de l'utilisateur et du mot de passe
-    if username != "test" or password != "test":
+    # Vérification des identifiants
+    if username == "admin" and password == "admin":
+        roles = ["admin"]
+    elif username == "user" and password == "userpass":
+        roles = ["user"]
+    else:
         return jsonify({"msg": "Mauvais utilisateur ou mot de passe"}), 401
 
-    # Définir les rôles dans le JWT
-    roles = ["admin"]  # Ici, on attribue le rôle 'admin' à l'utilisateur 'test'
-    
-    # Créer le jeton avec le rôle
+    # Créer le jeton avec les rôles appropriés
     access_token = create_access_token(identity=username, additional_claims={"roles": roles}, expires_delta=timedelta(hours=1))
     return jsonify(access_token=access_token)
 
