@@ -17,6 +17,8 @@
         <button type="submit">Se connecter</button>
     </form>
 
+    <div id="message"></div> <!-- Zone pour afficher le message de confirmation ou d'erreur -->
+
     <script>
         // Lors de la soumission du formulaire, nous évitons le comportement par défaut (rechargement de la page) et envoyons les données en AJAX.
         document.getElementById("login-form").addEventListener("submit", function(event) {
@@ -33,14 +35,15 @@
                 if (data.access_token) {
                     // Si un jeton est renvoyé, on le stocke dans un cookie
                     document.cookie = `access_token=${data.access_token}; path=/;`;
-                    alert("Connexion réussie !");
-                    window.location.href = "/protected";  // Rediriger vers la route protégée
+
+                    // Affichage d'un message de succès sans redirection
+                    document.getElementById("message").innerHTML = "<p>Connexion réussie ! Vous pouvez maintenant accéder à la route protégée.</p>";
                 } else {
-                    alert("Erreur de connexion.");
+                    document.getElementById("message").innerHTML = "<p>Erreur de connexion. Vérifiez votre login et mot de passe.</p>";
                 }
             })
             .catch(error => {
-                alert("Erreur : " + error);
+                document.getElementById("message").innerHTML = "<p>Erreur : " + error + "</p>";
             });
         });
     </script>
